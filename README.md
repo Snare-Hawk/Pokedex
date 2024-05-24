@@ -1,0 +1,1 @@
+A Pokédex app written in Python with data taken from [PokémonDB](https://pokemondb.net/).
