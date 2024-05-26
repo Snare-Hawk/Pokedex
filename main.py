@@ -13,10 +13,8 @@ def getName(url):
     newPage = requests.get(url)
     soup = bs(newPage.content, "html.parser")
     
-    # get info from pkmn page
-    pkmnName = soup.find("h1").text
-
-    return pkmnName
+    # get and return pkmn name from page
+    return soup.find("h1").text
 
 def getImgLink(url):
     newPage = requests.get(url)
@@ -26,9 +24,32 @@ def getImgLink(url):
     pkmnImg = soup.find_all("img")
 
     # we only need pkmnImg[1], at least for now
-    pkmnImgLink = pkmnImg[1]['src']
+    return pkmnImg[1]['src']
 
-    return pkmnImgLink
+def getTypes(url):
+    newPage = requests.get(url)
+    soup = bs(newPage.content, "html.parser")
+
+    # initialize array to hold 
+    typeArray = []
+
+    # find vitals table
+    vitalTable = soup.find("table")
+
+    tableRows = vitalTable.find_all("tr")
+    daTypes = tableRows[1]
+    typeContainer = daTypes.find("td")
+    actualType = typeContainer.find_all("a")
+    
+    typeArray.append(actualType[0].text)
+
+    if len(actualType) == 2:
+        typeArray.append(actualType[1].text)
+    elif len(actualType) == 1:
+        typeArray.append("None")
+
+    return typeArray
+
 
 def urlToImage(url):
     response = requests.get(url)
@@ -62,12 +83,24 @@ masterPkmnImgs = []
 
 arrayOfDicts = []
 
+dictDict = {}
+
+# whatStr = getTypes(pkmnPageList[0]['loc'])
+
+# print(type(whatStr))
+
+# with open("Output.txt", "w", encoding="utf-8") as text_file:
+#     text_file.write(whatStr)
+
+# gets the info for each pokemon and stores each entry into a dict
 for pkmnPage in pkmnPageList: 
     # gets the link to the pokemon's page 
     newURL = pkmnPage['loc']
+    # puts various info into dict
+    dictItem = {getName(newURL):{"img":getImgLink(newURL), "types":getTypes(newURL)}}
+    dictDict.update(dictItem)
+    # arrayOfDicts.append(dictItem)
 
-    dictItem = {"name":getName(newURL), "img":getImgLink(newURL)}
-    arrayOfDicts.append(dictItem)
 
 
 # json_object = json.dumps(pkmnImg, indent=4)
@@ -90,9 +123,9 @@ for i in masterPkmnImgs:
 # root.mainloop()
 
 # written to a json for easier viewing
-json_object = json.dumps(arrayOfDicts, indent=4)
+json_object = json.dumps(dictDict, indent=4)
 
-with open("PKMNinfo.json", "w+") as outfile:
+with open("PKMNinfo.json", "w+", encoding="utf-8") as outfile:
 	outfile.write(json_object)
 
 print("Done!")
