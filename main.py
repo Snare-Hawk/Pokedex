@@ -3,6 +3,9 @@ import requests
 import json
 import xmltodict
 import re
+from pathlib import Path
+import fileinput
+import os
 """
 from tkinter import *
 from io import BytesIO
@@ -10,6 +13,40 @@ from PIL import Image, ImageTk
 
 root = Tk()
 """
+reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/(?!game|stats).*"
+
+def getPkmnPageList(url):
+    # initialize pkmnPageList to hold all the links
+    pkmnPageList = []
+    filePath = Path("pkmnPagesTEST.json")
+
+    if os.path.exists(filePath):
+        with open(filePath, 'r', encoding='utf-8') as file:
+            pkmnPageList = json.load(file)
+
+    else:
+        print("File was not found. Starting to scrape...")
+        page = requests.get(url)
+
+        # this gets the XML file
+        data = page.content
+
+        # make it a dict
+        dataDict = xmltodict.parse(data)
+
+        for i in dataDict['urlset']['url']:
+            if ('priority' in i):
+                if re.search(reggie, i.get('loc')):
+                    pkmnPageList.append(i)
+
+        json_object = json.dumps(pkmnPageList, indent=4)
+
+        with open("pkmnPagesTEST.json", "w+", encoding="utf-8") as outfile:
+            outfile.write(json_object)
+        
+        print("Ok, we made it. Don't lose it.")
+
+    return pkmnPageList
 
 def getName(url):
     newPage = requests.get(url)
@@ -64,6 +101,17 @@ def getTypes(url):
 
     return typeArray
 
+def getHeight(url):
+    tableRows = getVitalTableRows(url)
+
+    daNumber = tableRows[0]
+    container = daNumber.find("td")
+    
+    height = container.text
+
+    return height
+
+
 def urlToImage(url):
     response = requests.get(url)
     img_data = response.content
@@ -72,25 +120,11 @@ def urlToImage(url):
     tk_img = ImageTk.PhotoImage(img)
     return tk_img
 
-URL = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
-# URL = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
-page = requests.get(URL)
 
-reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/(?!game|stats).*"
-
-# this gets the XML file
-data = page.content
-
-# make it a dict
-dataDict = xmltodict.parse(data)
-
-# initialize pkmnPageList to hold all the links
-pkmnPageList = []
-
-for i in dataDict['urlset']['url']:
-    if ('priority' in i):
-        if re.search(reggie, i.get('loc')):
-            pkmnPageList.append(i)
+# takes in a url as a string, returns an array
+url = "https:/pokemondb.net/static/sitemaps/pokemondb.xml"
+# url = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
+pkmnPageList = getPkmnPageList(url)
 
 # array of tkinter images
 masterPkmnImgs = []
