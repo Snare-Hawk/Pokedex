@@ -3,11 +3,13 @@ import requests
 import json
 import xmltodict
 import re
+"""
 from tkinter import *
 from io import BytesIO
 from PIL import Image, ImageTk
 
 root = Tk()
+"""
 
 def getName(url):
     newPage = requests.get(url)
@@ -26,22 +28,34 @@ def getImgLink(url):
     # we only need pkmnImg[1], at least for now
     return pkmnImg[1]['src']
 
-def getTypes(url):
+def getVitalTableRows(url):
     newPage = requests.get(url)
     soup = bs(newPage.content, "html.parser")
 
-    # initialize array to hold 
-    typeArray = []
-
-    # find vitals table
     vitalTable = soup.find("table")
 
     tableRows = vitalTable.find_all("tr")
+
+    return tableRows
+
+def getNatNo(url):
+    tableRows = getVitalTableRows(url)
+
+    daNumber = tableRows[0]
+    typeContainer = daNumber.find("td")
+    actualType = typeContainer.find("strong")
+    
+    natNo = actualType.text
+
+    return natNo
+
+def getTypes(url):
+    tableRows = getVitalTableRows(url)
     daTypes = tableRows[1]
     typeContainer = daTypes.find("td")
     actualType = typeContainer.find_all("a")
     
-    typeArray.append(actualType[0].text)
+    typeArray = [actualType[0].text]
 
     if len(actualType) == 2:
         typeArray.append(actualType[1].text)
@@ -49,7 +63,6 @@ def getTypes(url):
         typeArray.append("None")
 
     return typeArray
-
 
 def urlToImage(url):
     response = requests.get(url)
@@ -60,9 +73,10 @@ def urlToImage(url):
     return tk_img
 
 URL = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
+# URL = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
 page = requests.get(URL)
 
-reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/[^(game|stats)].*"
+reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/(?!game|stats).*"
 
 # this gets the XML file
 data = page.content
@@ -81,13 +95,7 @@ for i in dataDict['urlset']['url']:
 # array of tkinter images
 masterPkmnImgs = []
 
-arrayOfDicts = []
-
 dictDict = {}
-
-# whatStr = getTypes(pkmnPageList[0]['loc'])
-
-# print(type(whatStr))
 
 # with open("Output.txt", "w", encoding="utf-8") as text_file:
 #     text_file.write(whatStr)
@@ -97,10 +105,8 @@ for pkmnPage in pkmnPageList:
     # gets the link to the pokemon's page 
     newURL = pkmnPage['loc']
     # puts various info into dict
-    dictItem = {getName(newURL):{"img":getImgLink(newURL), "types":getTypes(newURL)}}
+    dictItem = {getName(newURL):{"img":getImgLink(newURL), "natNo":getNatNo(newURL),"types":getTypes(newURL)}}
     dictDict.update(dictItem)
-    # arrayOfDicts.append(dictItem)
-
 
 
 # json_object = json.dumps(pkmnImg, indent=4)
