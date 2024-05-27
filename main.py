@@ -1,11 +1,13 @@
-from bs4 import BeautifulSoup as bs
-import requests
+import fileinput
 import json
-import xmltodict
+import os
 import re
 from pathlib import Path
-import fileinput
-import os
+
+import requests
+import xmltodict
+from bs4 import BeautifulSoup as bs
+
 """
 from tkinter import *
 from io import BytesIO
@@ -13,7 +15,11 @@ from PIL import Image, ImageTk
 
 root = Tk()
 """
+
+# global variables
 reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/(?!game|stats).*"
+keyArray = ["natNo", "species", "height", "weight", "abilities"] # don't forget types!
+
 
 def getPkmnPageList(url):
     # initialize pkmnPageList to hold all the links
@@ -73,7 +79,17 @@ def getVitalTableRows(url):
 
     tableRows = vitalTable.find_all("tr")
 
-    return tableRows
+    arrayOfDicts = []
+
+    arrayOfDicts.append({"natNo":tableRows[0].find("td")})
+    # arrayOfDicts.append({"types":getTypes(url)})
+    arrayOfDicts.append({"species":tableRows[2].find("td")})
+    arrayOfDicts.append({"height":tableRows[3].find("td")})
+    arrayOfDicts.append({"weight":tableRows[4].find("td")})
+    arrayOfDicts.append({"abilities":tableRows[5].find("td")})
+
+    # return tableRows
+    return arrayOfDicts
 
 def getNatNo(url):
     tableRows = getVitalTableRows(url)
@@ -122,8 +138,8 @@ def urlToImage(url):
 
 
 # takes in a url as a string, returns an array
-url = "https:/pokemondb.net/static/sitemaps/pokemondb.xml"
-# url = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
+# url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
+url = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
 pkmnPageList = getPkmnPageList(url)
 
 # array of tkinter images
@@ -138,8 +154,37 @@ dictDict = {}
 for pkmnPage in pkmnPageList: 
     # gets the link to the pokemon's page 
     newURL = pkmnPage['loc']
+    pkmnName = getName(newURL)
     # puts various info into dict
-    dictItem = {getName(newURL):{"img":getImgLink(newURL), "natNo":getNatNo(newURL),"types":getTypes(newURL)}}
+    # dictItem = {pkmnName:{"img":getImgLink(newURL), "natNo":getNatNo(newURL),"types":getTypes(newURL)}}
+
+    # """
+
+    # array of dicts
+    dictArray = getVitalTableRows(newURL)   
+
+    # print(type(dictItem[pkmnName]))
+    # for i in range(5):
+    #     dictItem.update(dictArray[i].text)
+    # """
+
+    dictItem = {pkmnName:{'img':getImgLink(newURL)}}
+
+    for index, key in zip(range(len(dictArray)), keyArray):
+        dictItem[pkmnName].update({key:dictArray[index][key].text})
+
+    # dictItem = {
+    #     pkmnName:{
+    #         "img":getImgLink(newURL),
+    #         'natNo':dictArray[0]['natNo'].text,
+    #         # remember to include the types!
+    #         'species':dictArray[1]['species'].text,
+    #         'height':dictArray[2]['height'].text,
+    #         'weight':dictArray[3]['weight'].text,
+    #         'abilities':dictArray[4]['abilities'].text
+    #         }
+    #     }
+
     dictDict.update(dictItem)
 
 
