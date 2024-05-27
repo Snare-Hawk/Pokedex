@@ -18,7 +18,7 @@ root = Tk()
 
 # global variables
 reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/(?!game|stats).*"
-keyArray = ["natNo", "species", "height", "weight", "abilities"] # don't forget types!
+keyArray = ["natNo", "types", "species", "height", "weight", "abilities"]
 
 
 def getPkmnPageList(url):
@@ -82,7 +82,7 @@ def getVitalTableRows(url):
     arrayOfDicts = []
 
     arrayOfDicts.append({"natNo":tableRows[0].find("td")})
-    # arrayOfDicts.append({"types":getTypes(url)})
+    arrayOfDicts.append({"types":getTypes(tableRows[1].find("td"))})
     arrayOfDicts.append({"species":tableRows[2].find("td")})
     arrayOfDicts.append({"height":tableRows[3].find("td")})
     arrayOfDicts.append({"weight":tableRows[4].find("td")})
@@ -102,11 +102,8 @@ def getNatNo(url):
 
     return natNo
 
-def getTypes(url):
-    tableRows = getVitalTableRows(url)
-    daTypes = tableRows[1]
-    typeContainer = daTypes.find("td")
-    actualType = typeContainer.find_all("a")
+def getTypes(tableCell):
+    actualType = tableCell.find_all("a")
     
     typeArray = [actualType[0].text]
 
@@ -171,7 +168,10 @@ for pkmnPage in pkmnPageList:
     dictItem = {pkmnName:{'img':getImgLink(newURL)}}
 
     for index, key in zip(range(len(dictArray)), keyArray):
-        dictItem[pkmnName].update({key:dictArray[index][key].text})
+        if key == "types":
+            dictItem[pkmnName].update({key:dictArray[index][key]})
+        else:
+            dictItem[pkmnName].update({key:dictArray[index][key].text})
 
     # dictItem = {
     #     pkmnName:{
