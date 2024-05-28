@@ -24,7 +24,8 @@ keyArray = ["natNo", "types", "species", "height", "weight", "abilities"]
 def getPkmnPageList(url):
     # initialize pkmnPageList to hold all the links
     pkmnPageList = []
-    filePath = Path("pkmnPagesTEST.json")
+    realOrTest = "pkmnPageREAL.json"
+    filePath = Path(realOrTest)
 
     if os.path.exists(filePath):
         with open(filePath, 'r', encoding='utf-8') as file:
@@ -47,7 +48,7 @@ def getPkmnPageList(url):
 
         json_object = json.dumps(pkmnPageList, indent=4)
 
-        with open("pkmnPagesTEST.json", "w+", encoding="utf-8") as outfile:
+        with open(realOrTest, "w+", encoding="utf-8") as outfile:
             outfile.write(json_object)
         
         print("Ok, we made it. Don't lose it.")
@@ -86,12 +87,13 @@ def getVitalTableRows(url):
     arrayOfDicts.append({"species":tableRows[2].find("td")})
     arrayOfDicts.append({"height":tableRows[3].find("td")})
     arrayOfDicts.append({"weight":tableRows[4].find("td")})
-    arrayOfDicts.append({"abilities":tableRows[5].find("td")})
+    arrayOfDicts.append({"abilities":getAbilities(tableRows[5].find("td"))})
 
     # return tableRows
     return arrayOfDicts
 
-def getNatNo(url):
+    """
+    def getNatNo(url):
     tableRows = getVitalTableRows(url)
 
     daNumber = tableRows[0]
@@ -101,6 +103,7 @@ def getNatNo(url):
     natNo = actualType.text
 
     return natNo
+    """
 
 def getTypes(tableCell):
     actualType = tableCell.find_all("a")
@@ -109,12 +112,13 @@ def getTypes(tableCell):
 
     if len(actualType) == 2:
         typeArray.append(actualType[1].text)
-    elif len(actualType) == 1:
+    else:
         typeArray.append("None")
 
     return typeArray
 
-def getHeight(url):
+    """
+    def getHeight(url):
     tableRows = getVitalTableRows(url)
 
     daNumber = tableRows[0]
@@ -123,6 +127,27 @@ def getHeight(url):
     height = container.text
 
     return height
+    """
+
+def getAbilities(tableCell):
+    abilities = tableCell.find_all("span")
+    hiddenAbility = tableCell.find_all("small")
+
+    abilityArray = [abilities[0].find("a").text]
+
+    if len(abilities) == 2:
+        abilityArray.append(abilities[1].find("a").text)
+    else:
+        abilityArray.append("None")
+
+    if len(hiddenAbility) == 0:
+        daHiddenOne  = "None"
+    else:
+        daHiddenOne = hiddenAbility[0].find("a").text
+
+    abiliDict = {"abilities":{"mainAbilities":abilityArray,"hiddenAbilities":daHiddenOne}}
+    
+    return abiliDict
 
 
 def urlToImage(url):
@@ -135,8 +160,8 @@ def urlToImage(url):
 
 
 # takes in a url as a string, returns an array
-# url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
-url = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
+url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
+# url = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
 pkmnPageList = getPkmnPageList(url)
 
 # array of tkinter images
@@ -168,7 +193,7 @@ for pkmnPage in pkmnPageList:
     dictItem = {pkmnName:{'img':getImgLink(newURL)}}
 
     for index, key in zip(range(len(dictArray)), keyArray):
-        if key == "types":
+        if key == "types" or key == "abilities":
             dictItem[pkmnName].update({key:dictArray[index][key]})
         else:
             dictItem[pkmnName].update({key:dictArray[index][key].text})
