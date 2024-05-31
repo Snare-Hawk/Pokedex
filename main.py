@@ -3,46 +3,49 @@ import json
 import os
 import re
 from pathlib import Path
-
+from tkinter import *
+from io import BytesIO
+from PIL import Image, ImageTk
 import requests
 import xmltodict
 from bs4 import BeautifulSoup as bs
 
-
+"""
+TODO:
+- make cases for mono types and abilities
+- align things in GUI better
+- get pokemon name as title of window
+- make a scrollable list and a search function to browse through pokemon
+- add regional forms, somehow
+"""
 
 url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
 pkmnPage = "pkmnPageREAL.json"
-outputFile = "pkmnInfoREAL.json"
+pkmnInfo = "pkmnInfoREAL.json"
 
 url = "https://is.gd/5xpaki"
 pkmnPage = "pkmnPageTEST.json"
-outputFile = "pkmnInfoTEST.json"
-
-
-"""
-from tkinter import *
-from io import BytesIO
-from PIL import Image, ImageTk
+pkmnInfo = "pkmnInfoTEST.json"
 
 root = Tk()
-"""
 
 # global variables
 reggie = "https\\:\\/\\/pokemondb\\.net\\/pokedex\\/(?!game|stats).*"
 keyArray = ["natNo", "types", "species", "height", "weight", "abilities"]
 
 
-def getPkmnPageList(url):
+def getPkmnPageList():
     # initialize pkmnPageList to hold all the links
     pkmnPageList = []
-    filePath = Path(realOrTest)
+    filePath = Path(pkmnPage)
 
     if os.path.exists(filePath):
+        print("File found! Starting to scrape each indiviual page for info...")
         with open(filePath, 'r', encoding='utf-8') as file:
             pkmnPageList = json.load(file)
 
     else:
-        print("File was not found. Starting to scrape...")
+        print("File not found. Starting to scrape to get the link to each pokémon's page...")
         page = requests.get(url)
 
         # this gets the XML file
@@ -58,10 +61,10 @@ def getPkmnPageList(url):
 
         json_object = json.dumps(pkmnPageList, indent=4)
 
-        with open(realOrTest, "w+", encoding="utf-8") as outfile:
+        with open(pkmnPage, "w+", encoding="utf-8") as outfile:
             outfile.write(json_object)
 
-        print("Ok, we made it. Don't lose it.")
+        print("Ok, we made it. Don't lose it now!")
 
     return pkmnPageList
 
@@ -159,6 +162,40 @@ def getAbilities(tableCell):
 
     return abiliDict
 
+def makePokedex():
+    pokedex = {}
+    filePath = Path(pkmnInfo)
+
+    if os.path.exists(filePath):
+        print("File found! Using that to generate GUI...")
+        with open(filePath, 'r', encoding='utf-8') as file:
+            pokedex = json.load(file)
+    else:
+        # gets the info for each pokemon and stores each entry into a dict
+        for pkmnPage in pkmnPageList:
+            # gets the link to the pokemon's page
+            newURL = pkmnPage['loc']
+            pkmnName = getName(newURL)
+
+            # array of dicts
+            dictArray = getVitalTableRows(newURL)
+
+            # initialize entry with image link
+            pkmnEntry = {pkmnName:{'img':getImgLink(newURL)}}
+
+            # puts various info into dict
+            for index, key in zip(range(len(dictArray)), keyArray):
+                if key == "types":
+                    pkmnEntry[pkmnName].update({key:dictArray[index][key]})
+                elif key == "abilities":
+                    pkmnEntry[pkmnName].update(dictArray[index][key])
+                else:
+                    pkmnEntry[pkmnName].update({key:dictArray[index][key].text})
+
+            # updates actual "pokédex" pokémon entry 
+            pokedex.update(pkmnEntry)
+
+    return pokedex
 def urlToImage(url):
     response = requests.get(url)
     img_data = response.content
@@ -168,70 +205,47 @@ def urlToImage(url):
     return tk_img
 
 # takes in a url as a string, returns an array
+pkmnPageList = getPkmnPageList()
 
-pkmnPageList = getPkmnPageList(url)
+# makes pokedex
+pokedex = makePokedex()
 
 # array of tkinter images
 masterPkmnImgs = []
-
-dictDict = {}
-
-# with open("Output.txt", "w", encoding="utf-8") as text_file:
-#     text_file.write(whatStr)
-
-# gets the info for each pokemon and stores each entry into a dict
-for pkmnPage in pkmnPageList:
-    # gets the link to the pokemon's page
-    newURL = pkmnPage['loc']
-    pkmnName = getName(newURL)
-    # puts various info into dict
-    # dictItem = {pkmnName:{"img":getImgLink(newURL), "natNo":getNatNo(newURL),"types":getTypes(newURL)}}
-
-    # """
-
-    # array of dicts
-    dictArray = getVitalTableRows(newURL)
-
-    # print(type(dictItem[pkmnName]))
-    # for i in range(5):
-    #     dictItem.update(dictArray[i].text)
-    # """
-
-    dictItem = {pkmnName:{'img':getImgLink(newURL)}}
-
-    for index, key in zip(range(len(dictArray)), keyArray):
-        if key == "types" or key == "abilities":
-            dictItem[pkmnName].update({key:dictArray[index][key]})
-        else:
-            dictItem[pkmnName].update({key:dictArray[index][key].text})
-
-    dictDict.update(dictItem)
-
 
 # json_object = json.dumps(pkmnImg, indent=4)
 
 # with open("pkmn.json", "w+") as outfile:
 # 	outfile.write(json_object)
 
-# root.title(pkmnName)
-# root.geometry("500x500")
+# i = list(pokedex.keys())
 
-# Label(root, text="hi", font=("Ubuntu", 24)).pack()
+bulbasaur = pokedex["Bulbasaur"]
 
-"""
-for i in masterPkmnImgs:
-    # pkmnImg = urlToImage(pkmnImg[1]['src'])
-    label = Label(root, image=i)
-    label.pack()
-"""
+root.title("Pok\u00e9mon")
+root.geometry("1000x600")
+root.resizable(False, False)
+
+# convert the image to a format Tkinter can use
+image = urlToImage(bulbasaur["img"])
+
+Label(root, text="hi", font=("Ubuntu", 24)).pack()
+Label(root, image=image, compound="left").pack()
+Label(root, text=("Type: " + bulbasaur["types"][0] + '/' + bulbasaur["types"][1]), font="Ubuntu").pack()
+Label(root, text=("Species: " + bulbasaur["species"]), font="Ubuntu").pack()
+Label(root, text=("Height: " + bulbasaur["height"]), font="Ubuntu").pack()
+Label(root, text=("Weight: " + bulbasaur["weight"]), font="Ubuntu").pack()
+Label(root, text=("Abilities: " + bulbasaur["abilities"]["mainAbilities"][0] + '/' + bulbasaur["abilities"]["mainAbilities"][1] + "\nHA: " + bulbasaur["abilities"]["hiddenAbilities"]), font="Ubuntu").pack()
+
+
 # for names, imgs in zip()
-# root.mainloop()
+root.mainloop()
 
 # written to a json for easier viewing
-json_object = json.dumps(dictDict, indent=4)
+json_object = json.dumps(pokedex, indent=4)
 
 
-with open(outputFile, "w+", encoding="utf-8") as outfile:
+with open(pkmnInfo, "w+", encoding="utf-8") as outfile:
 	outfile.write(json_object)
 
 print("Done!")
