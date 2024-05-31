@@ -8,6 +8,17 @@ import requests
 import xmltodict
 from bs4 import BeautifulSoup as bs
 
+
+
+url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
+pkmnPage = "pkmnPageREAL.json"
+outputFile = "pkmnInfoREAL.json"
+
+url = "https://is.gd/5xpaki"
+pkmnPage = "pkmnPageTEST.json"
+outputFile = "pkmnInfoTEST.json"
+
+
 """
 from tkinter import *
 from io import BytesIO
@@ -24,7 +35,6 @@ keyArray = ["natNo", "types", "species", "height", "weight", "abilities"]
 def getPkmnPageList(url):
     # initialize pkmnPageList to hold all the links
     pkmnPageList = []
-    realOrTest = "pkmnPageREAL.json"
     filePath = Path(realOrTest)
 
     if os.path.exists(filePath):
@@ -50,7 +60,7 @@ def getPkmnPageList(url):
 
         with open(realOrTest, "w+", encoding="utf-8") as outfile:
             outfile.write(json_object)
-        
+
         print("Ok, we made it. Don't lose it.")
 
     return pkmnPageList
@@ -58,7 +68,7 @@ def getPkmnPageList(url):
 def getName(url):
     newPage = requests.get(url)
     soup = bs(newPage.content, "html.parser")
-    
+
     # get and return pkmn name from page
     return soup.find("h1").text
 
@@ -99,7 +109,7 @@ def getVitalTableRows(url):
     daNumber = tableRows[0]
     typeContainer = daNumber.find("td")
     actualType = typeContainer.find("strong")
-    
+
     natNo = actualType.text
 
     return natNo
@@ -107,7 +117,7 @@ def getVitalTableRows(url):
 
 def getTypes(tableCell):
     actualType = tableCell.find_all("a")
-    
+
     typeArray = [actualType[0].text]
 
     if len(actualType) == 2:
@@ -123,7 +133,7 @@ def getTypes(tableCell):
 
     daNumber = tableRows[0]
     container = daNumber.find("td")
-    
+
     height = container.text
 
     return height
@@ -146,9 +156,8 @@ def getAbilities(tableCell):
         daHiddenOne = hiddenAbility[0].find("a").text
 
     abiliDict = {"abilities":{"mainAbilities":abilityArray,"hiddenAbilities":daHiddenOne}}
-    
-    return abiliDict
 
+    return abiliDict
 
 def urlToImage(url):
     response = requests.get(url)
@@ -158,10 +167,8 @@ def urlToImage(url):
     tk_img = ImageTk.PhotoImage(img)
     return tk_img
 
-
 # takes in a url as a string, returns an array
-url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
-# url = "https://cdn.discordapp.com/attachments/666436193898201109/1244159668591267920/balls.xml?ex=6654197c&is=6652c7fc&hm=be8f1422e1d2c56719e9665b3e109338cafecb090a13f4f774edf03e96d93605&"
+
 pkmnPageList = getPkmnPageList(url)
 
 # array of tkinter images
@@ -173,8 +180,8 @@ dictDict = {}
 #     text_file.write(whatStr)
 
 # gets the info for each pokemon and stores each entry into a dict
-for pkmnPage in pkmnPageList: 
-    # gets the link to the pokemon's page 
+for pkmnPage in pkmnPageList:
+    # gets the link to the pokemon's page
     newURL = pkmnPage['loc']
     pkmnName = getName(newURL)
     # puts various info into dict
@@ -183,7 +190,7 @@ for pkmnPage in pkmnPageList:
     # """
 
     # array of dicts
-    dictArray = getVitalTableRows(newURL)   
+    dictArray = getVitalTableRows(newURL)
 
     # print(type(dictItem[pkmnName]))
     # for i in range(5):
@@ -197,18 +204,6 @@ for pkmnPage in pkmnPageList:
             dictItem[pkmnName].update({key:dictArray[index][key]})
         else:
             dictItem[pkmnName].update({key:dictArray[index][key].text})
-
-    # dictItem = {
-    #     pkmnName:{
-    #         "img":getImgLink(newURL),
-    #         'natNo':dictArray[0]['natNo'].text,
-    #         # remember to include the types!
-    #         'species':dictArray[1]['species'].text,
-    #         'height':dictArray[2]['height'].text,
-    #         'weight':dictArray[3]['weight'].text,
-    #         'abilities':dictArray[4]['abilities'].text
-    #         }
-    #     }
 
     dictDict.update(dictItem)
 
@@ -235,7 +230,8 @@ for i in masterPkmnImgs:
 # written to a json for easier viewing
 json_object = json.dumps(dictDict, indent=4)
 
-with open("PKMNinfo.json", "w+", encoding="utf-8") as outfile:
+
+with open(outputFile, "w+", encoding="utf-8") as outfile:
 	outfile.write(json_object)
 
 print("Done!")
