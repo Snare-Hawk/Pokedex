@@ -12,20 +12,20 @@ from bs4 import BeautifulSoup as bs
 
 """
 TODO:
-- make cases for mono types and abilities
-- align things in GUI better
-- get pokemon name as title of window
-- make a scrollable list and a search function to browse through pokemon
-- add regional forms, somehow
+[X] make cases for mono types and abilities
+[ ] align things in GUI better
+[ ] get pokemon name as title of window
+[ ] make a scrollable list and a search function to browse through pokemon
+[ ] add regional forms, somehow
 """
 
 url = "https://pokemondb.net/static/sitemaps/pokemondb.xml"
 pkmnPage = "pkmnPageREAL.json"
 pkmnInfo = "pkmnInfoREAL.json"
 
-url = "https://is.gd/5xpaki"
-pkmnPage = "pkmnPageTEST.json"
-pkmnInfo = "pkmnInfoTEST.json"
+# url = "https://is.gd/5xpaki"
+# pkmnPage = "pkmnPageTEST.json"
+# pkmnInfo = "pkmnInfoTEST.json"
 
 root = Tk()
 
@@ -196,6 +196,12 @@ def makePokedex():
             pokedex.update(pkmnEntry)
 
     return pokedex
+
+def formatMono(array):
+    if array[1] == "None":
+        return array[0]
+    return (f"{array[0]}/{array[1]}")
+
 def urlToImage(url):
     response = requests.get(url)
     img_data = response.content
@@ -220,30 +226,46 @@ masterPkmnImgs = []
 
 # i = list(pokedex.keys())
 
-bulbasaur = pokedex["Bulbasaur"]
+print("Enter a Pok\u00e9mon:")
+balls = input()
+
+bulbasaur = pokedex[balls]
 
 root.title("Pok\u00e9mon")
-root.geometry("1000x600")
+# root.geometry("1000x600")
 root.resizable(False, False)
 
 # convert the image to a format Tkinter can use
 image = urlToImage(bulbasaur["img"])
 
+# configuration of window
+root.columnconfigure(4, weight=1)
+root.rowconfigure(4, weight=1)
+
+"""
+.grid(column=1, row=0)
+.grid(column=0, row=1, padx=100)
+.grid(column=1, row=2)
+.grid()
+.grid()
+.grid()
+.grid()
+"""
+
 Label(root, text="hi", font=("Ubuntu", 24)).pack()
 Label(root, image=image, compound="left").pack()
-Label(root, text=("Type: " + bulbasaur["types"][0] + '/' + bulbasaur["types"][1]), font="Ubuntu").pack()
+Label(root, text=(f"National \u2116: {bulbasaur["natNo"]}"), font="Ubuntu").pack()
+Label(root, text=("Type: " + formatMono(bulbasaur["types"])), font="Ubuntu").pack()
 Label(root, text=("Species: " + bulbasaur["species"]), font="Ubuntu").pack()
 Label(root, text=("Height: " + bulbasaur["height"]), font="Ubuntu").pack()
 Label(root, text=("Weight: " + bulbasaur["weight"]), font="Ubuntu").pack()
-Label(root, text=("Abilities: " + bulbasaur["abilities"]["mainAbilities"][0] + '/' + bulbasaur["abilities"]["mainAbilities"][1] + "\nHA: " + bulbasaur["abilities"]["hiddenAbilities"]), font="Ubuntu").pack()
-
+Label(root, text=("Abilities: " + formatMono(bulbasaur["abilities"]["mainAbilities"]) + "\nHidden Ability: " + bulbasaur["abilities"]["hiddenAbilities"]), font="Ubuntu").pack()
 
 # for names, imgs in zip()
 root.mainloop()
 
 # written to a json for easier viewing
 json_object = json.dumps(pokedex, indent=4)
-
 
 with open(pkmnInfo, "w+", encoding="utf-8") as outfile:
 	outfile.write(json_object)
